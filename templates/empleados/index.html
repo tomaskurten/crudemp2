@@ -24,10 +24,15 @@
             {%for empleado in empleados %}
             <tr>
                 <td>{{empleado[0]}}</td>
-                <td>{{empleado[3]}}</td>
                 <td>{{empleado[1]}}</td>
                 <td>{{empleado[2]}}</td>
+                <td>{{empleado[3]}}</td>
+                <td>
+                    <img class="imgthumbnail" width="100" src="{{url_for('uploads', nombreFoto=empleado[3])}}" alt="{{empleado[3]}}"><br><br>
+
+                </td>
                 <td> <a href="/destroy/{{empleado[0]}}">Eliminar</a> || <a href="/edit/{{empleado[0]}}">Editar</a> </td>
+                
             </tr>
             {% endfor %}
         </tbody>

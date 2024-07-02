@@ -1,11 +1,14 @@
 from flask import Flask
 from flaskext.mysql import MySQL
-from flask import render_template, request, redirect
+from datetime import datetime
+from flask import render_template, request,redirect, send_from_directory
+import os
 
 app=Flask(__name__)
+CARPETA= os.path.join('uploads')
+app.config['CARPETA']=CARPETA
 
 mysql=MySQL()
-
 # Creamos la referencia al host, para que se conecte a la base
 # de datos MYSQL utilizamos el host localhost
 app.config['MYSQL_DATABASE_HOST']='localhost'
@@ -36,11 +39,19 @@ def create():
 
 @app.route("/store",methods=["POST"])
 def storage():
+    
+    now=datetime.now()
+    tiempo=now.strftime("%Y%H%M%S")
+    
     _nombre=request.form["txtNombre"]
     _correo=request.form["txtCorreo"]
-    _foto="null.jpg"
+    _foto=request.files["txtFoto"]
     
-    datos=(_nombre,_correo,_foto)
+    if _foto.filename!="":
+        nombreFoto=tiempo+_foto.filename
+        _foto.save("uploads/"+nombreFoto)
+    
+    datos=(_nombre,_correo,nombreFoto)
     
     sql="INSERT INTO `sistema`.`empleados` (`id`, `nombre`, `correo`, `foto`) VALUES (NULL, %s, %s, %s);"
     conn=mysql.connect()
@@ -61,15 +72,32 @@ def destroy(id):
 
 @app.route("/edit/<int:id>")
 def edit(id):
-    # sql="UPDATE `empleados` SET `nombre` = 'editexitoso' WHERE `empleados`.`id` = 12;"
-    sql="SELECT * FROM `sistema`.`empleados` WHERE id=12"
+    sql="SELECT * FROM `sistema`.`empleados` WHERE `empleados`.`id` = %s"
     conn=mysql.connect()
     cursor=conn.cursor()
-    cursor.execute(sql)
+    cursor.execute(sql,(id))
     empleados=cursor.fetchall()
-    
     conn.commit()
-    return render_template("empleados/edit.html")
+    return render_template("empleados/edit.html", empleados=empleados)
+
+
+@app.route("/update",methods=["POST"])
+def update():
+    _nombre=request.form["txtNombre"]
+    _correo=request.form["txtCorreo"]
+    # _foto="null.jpg"
+    id=request.form["txtID"]
+    sql="UPDATE `sistema`.`empleados` SET `nombre` = %s, `correo` = %s WHERE `empleados`.`id` = %s;"
+    datos=(_nombre,_correo,id)
+    conn=mysql.connect()
+    cursor=conn.cursor()
+    cursor.execute(sql,datos)
+    conn.commit()
+    return redirect("/")
+
+@app.route('/uploads/<nombreFoto>')
+def uploads(nombreFoto):
+    return send_from_directory(app.config['CARPETA'], nombreFoto)
 
 if __name__=="__main__":
     app.run(debug=True,port=8055)
